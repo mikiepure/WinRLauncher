@@ -5,12 +5,12 @@ using System.Runtime.InteropServices;
 // アセンブリに関する一般情報は以下の属性セットをとおして制御されます。
 // アセンブリに関連付けられている情報を変更するには、
 // これらの属性値を変更してください。
-[assembly: AssemblyTitle("WinRLauncher")]
+[assembly: AssemblyTitle("Win+R Launcher")]
 [assembly: AssemblyDescription("")]
 [assembly: AssemblyConfiguration("")]
 [assembly: AssemblyCompany("")]
-[assembly: AssemblyProduct("WinRLauncher")]
-[assembly: AssemblyCopyright("Copyright ©  2015")]
+[assembly: AssemblyProduct("")]
+[assembly: AssemblyCopyright("Copyright (C) 2015 Labbit Software")]
 [assembly: AssemblyTrademark("")]
 [assembly: AssemblyCulture("")]
 
@@ -19,18 +19,18 @@ using System.Runtime.InteropServices;
 // その型の ComVisible 属性を true に設定してください。
 [assembly: ComVisible(false)]
 
-// 次の GUID は、このプロジェクトが COM に公開される場合の、typelib の ID です
-[assembly: Guid("349d41de-0702-4582-ae84-b7aafb6da061")]
+// このプロジェクトが COM に公開される場合、次の GUID が typelib の ID になります
+[assembly: Guid("38aa0a03-2d98-4f09-aac6-5f6ce8611a1e")]
 
-// アセンブリのバージョン情報は、以下の 4 つの値で構成されています:
+// アセンブリのバージョン情報は次の 4 つの値で構成されています:
 //
-//      Major Version
-//      Minor Version 
-//      Build Number
+//      メジャー バージョン
+//      マイナー バージョン
+//      ビルド番号
 //      Revision
 //
 // すべての値を指定するか、下のように '*' を使ってビルドおよびリビジョン番号を 
 // 既定値にすることができます:
 // [assembly: AssemblyVersion("1.0.*")]
-[assembly: AssemblyVersion("1.0.0.0")]
-[assembly: AssemblyFileVersion("1.0.0.0")]
+[assembly: AssemblyVersion("0.1.0.0")]
+[assembly: AssemblyFileVersion("0.1.0.0")]
