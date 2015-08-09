@@ -5,9 +5,10 @@ namespace WinRLauncher
 {
     public partial class DialogShellLinkFile : Form
     {
-        public DialogShellLinkFile(FormMain baseForm, string command, string path, string arguments, string workingDirectory)
+        public DialogShellLinkFile(FormMain baseForm, bool edit, string command, string path, string arguments, string workingDirectory)
         {
             InitializeComponent();
+            Edit = edit;
             BaseForm = baseForm;
             Command = command;
             Path = path;
@@ -32,12 +33,15 @@ namespace WinRLauncher
                     return;
                 }
 
-                if (Array.Exists(BaseForm.LauncherFiles.ToArray(), delegate (File.LauncherFile launchFile) { return string.Compare(launchFile.Command, Command, true) == 0; }))
+                if (!Edit)
                 {
-                    if (MessageBox.Show("Command '" + Command + "' is already exists. Do you want to replace it?", "Check Override", MessageBoxButtons.OKCancel, MessageBoxIcon.Question) == DialogResult.Cancel)
+                    if (Array.Exists(BaseForm.LauncherFiles.ToArray(), delegate (File.LauncherFile launchFile) { return string.Compare(launchFile.Command, Command, true) == 0; }))
                     {
-                        e.Cancel = true;
-                        return;
+                        if (MessageBox.Show("Command '" + Command + "' is already exists. Do you want to replace it?", "Check Override", MessageBoxButtons.OKCancel, MessageBoxIcon.Question) == DialogResult.Cancel)
+                        {
+                            e.Cancel = true;
+                            return;
+                        }
                     }
                 }
             }
@@ -69,6 +73,7 @@ namespace WinRLauncher
         }
 
         private FormMain BaseForm { get; set; }
+        private bool Edit { get; set; }
 
         public string Command
         {

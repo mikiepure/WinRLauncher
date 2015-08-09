@@ -9,24 +9,6 @@ namespace WinRLauncher.File
             // Do nothing
         }
 
-        public override string Action
-        {
-            get { return "-"; }
-            set { }
-        }
-
-        public override string Arguments
-        {
-            get { return "-"; }
-            set { }
-        }
-
-        public override string WorkingDirectory
-        {
-            get { return "-"; }
-            set { }
-        }
-
         public override System.Drawing.Color ForeColor
         {
             get { return System.Drawing.Color.Red; }

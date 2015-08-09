@@ -1,42 +1,37 @@
-﻿using System;
+﻿using Microsoft.Win32;
+using System;
 using System.Collections.Generic;
 using System.Windows.Forms;
-using Microsoft.Win32;
+using WinRLauncher.Util;
 
 namespace WinRLauncher
 {
     public partial class FormMain : Form
     {
-        public static string EV_PATH = "PATH";
-        public static string EV_WINR_LAUNCHER_PATH = "WINR_LNCH_PATH";
-        public static string EV_REF_WINR_LAUNCHER_PATH = "%" + EV_WINR_LAUNCHER_PATH + "%";
-
         public FormMain()
         {
             InitializeComponent();
-
-            this.LauncherFiles = new List<File.LauncherFile>();
 
             // Create directory for launcher files
             if (!System.IO.Directory.Exists(this.LauncherFilesDirectoryPath))
                 System.IO.Directory.CreateDirectory(this.LauncherFilesDirectoryPath);
 
             // Create WinRLauncher environment variable
-            string evWinRLauncherPath = Util.EnvironmentVariable.getUserValue(EV_WINR_LAUNCHER_PATH, RegistryValueOptions.None);
+            string evWinRLauncherPath = EnvironmentVariable.getUserValue(EvWinRLauncherPath, RegistryValueOptions.None);
             if (evWinRLauncherPath != LauncherFilesDirectoryPath)
-                Util.EnvironmentVariable.setUserValue(EV_WINR_LAUNCHER_PATH, LauncherFilesDirectoryPath, RegistryValueKind.String);
+                EnvironmentVariable.setUserValue(EvWinRLauncherPath, LauncherFilesDirectoryPath, RegistryValueKind.String);
 
             // Set WinRLauncher environment variable to Path
-            string[] evPathValues = Util.EnvironmentVariable.getUserValues(EV_PATH, RegistryValueOptions.DoNotExpandEnvironmentNames);
+            string[] evPathValues = EnvironmentVariable.getUserValues(EvPath, RegistryValueOptions.DoNotExpandEnvironmentNames);
             if (evPathValues == null)
             {
-                Util.EnvironmentVariable.setUserValue(EV_PATH, EV_REF_WINR_LAUNCHER_PATH, RegistryValueKind.ExpandString);
+                EnvironmentVariable.setUserValue(EvPath, EvRefWinRLauncherPath, RegistryValueKind.ExpandString);
             }
-            else if (Array.IndexOf<string>(evPathValues, EV_REF_WINR_LAUNCHER_PATH) < 0)
+            else if (Array.IndexOf<string>(evPathValues, EvRefWinRLauncherPath) < 0)
             {
                 var evPathList = new List<string>(evPathValues);
-                evPathList.Add(EV_REF_WINR_LAUNCHER_PATH);
-                Util.EnvironmentVariable.setUserValue(EV_PATH, string.Join(";", evPathList.ToArray()), RegistryValueKind.ExpandString);
+                evPathList.Add(EvRefWinRLauncherPath);
+                EnvironmentVariable.setUserValue(EvPath, string.Join(";", evPathList.ToArray()), RegistryValueKind.ExpandString);
             }
         }
 
@@ -78,7 +73,7 @@ namespace WinRLauncher
 
         private void userControlNewLinkFile()
         {
-            showShellLinkFileDialog();
+            showShellLinkFileDialog(false);
         }
 
         private void newBatchFileToolStripMenuItem_Click(object sender, EventArgs e)
@@ -93,7 +88,7 @@ namespace WinRLauncher
 
         private void userControlNewBatchFile()
         {
-            showBatchFileDialog();
+            showBatchFileDialog(false);
         }
 
         private void editSelectedFileToolStripMenuItem_Click(object sender, EventArgs e)
@@ -113,9 +108,9 @@ namespace WinRLauncher
 
             var launcherFile = LauncherFiles[listViewMain.SelectedItems[0].Index];
             if (launcherFile is File.ShellLinkFile)
-                showShellLinkFileDialog(launcherFile.Command, launcherFile.Action, launcherFile.Arguments, launcherFile.WorkingDirectory);
+                showShellLinkFileDialog(true, launcherFile.Command, launcherFile.Action, launcherFile.Arguments, launcherFile.WorkingDirectory);
             else if (launcherFile is File.BatchFile)
-                showBatchFileDialog(launcherFile.Command, launcherFile.Action);
+                showBatchFileDialog(true, launcherFile.Command, launcherFile.Action);
         }
 
         private void removeSelectedFileToolStripMenuItem_Click(object sender, EventArgs e)
@@ -168,8 +163,8 @@ namespace WinRLauncher
             {
                 var item = new ListViewItem(launcherFile.Command);
                 item.SubItems.Add(launcherFile.Action);
-                item.SubItems.Add(launcherFile.WorkingDirectory);
                 item.SubItems.Add(launcherFile.Arguments);
+                item.SubItems.Add(launcherFile.WorkingDirectory);
                 item.ForeColor = launcherFile.ForeColor;
                 item.BackColor = launcherFile.BackColor;
                 items.Add(item);
@@ -209,28 +204,28 @@ namespace WinRLauncher
                 return;
 
             // Remove ' %WINR_LAUNCHER_PATH% ' from environment variable ' PATH '
-            var evPaths = Util.EnvironmentVariable.getUserValues(FormMain.EV_PATH, RegistryValueOptions.DoNotExpandEnvironmentNames);
+            var evPaths = EnvironmentVariable.getUserValues(FormMain.EvPath, RegistryValueOptions.DoNotExpandEnvironmentNames);
             if (evPaths != null)
             {
                 var evPathList = new List<string>(evPaths);
-                if (evPathList.Remove(FormMain.EV_REF_WINR_LAUNCHER_PATH))
+                if (evPathList.Remove(FormMain.EvRefWinRLauncherPath))
                 {
                     if (0 < evPathList.Count)
                     {
-                        Util.EnvironmentVariable.setUserValues(FormMain.EV_PATH, evPathList.ToArray(), RegistryValueKind.ExpandString);
+                        EnvironmentVariable.setUserValues(FormMain.EvPath, evPathList.ToArray(), RegistryValueKind.ExpandString);
                     }
                     else
                     {
-                        Util.EnvironmentVariable.deleteUserKey(FormMain.EV_PATH);
+                        EnvironmentVariable.deleteUserKey(FormMain.EvPath);
                     }
                 }
             }
 
             // Remove environment variable ' PATH_LNKS '
-            string evWinRLauncherPath = Util.EnvironmentVariable.getUserValue(FormMain.EV_WINR_LAUNCHER_PATH, RegistryValueOptions.None);
+            string evWinRLauncherPath = EnvironmentVariable.getUserValue(FormMain.EvWinRLauncherPath, RegistryValueOptions.None);
             if (evWinRLauncherPath != null)
             {
-                Util.EnvironmentVariable.deleteUserKey(FormMain.EV_WINR_LAUNCHER_PATH);
+                EnvironmentVariable.deleteUserKey(FormMain.EvWinRLauncherPath);
             }
 
             // Remove configuration directory
@@ -329,14 +324,14 @@ namespace WinRLauncher
                 wdir = System.IO.Path.GetDirectoryName(filepath);
             }
 
-            showShellLinkFileDialog(command, path, args, wdir);
+            showShellLinkFileDialog(false, command, path, args, wdir);
         }
 
         // -- Helper Functions -- //
 
-        private void showShellLinkFileDialog(string command = "", string path = "", string arguments = "", string workingDirectory = "")
+        private void showShellLinkFileDialog(bool edit, string command = "", string path = "", string arguments = "", string workingDirectory = "")
         {
-            using (var dialog = new DialogShellLinkFile(this, command, path, arguments, workingDirectory))
+            using (var dialog = new DialogShellLinkFile(this, edit, command, path, arguments, workingDirectory))
             {
                 if (dialog.ShowDialog() == DialogResult.OK)
                 {
@@ -347,9 +342,9 @@ namespace WinRLauncher
             }
         }
 
-        private void showBatchFileDialog(string command = "", string action = "")
+        private void showBatchFileDialog(bool edit, string command = "", string action = "")
         {
-            using (var dialog = new DialogBatchFile(this, command, action))
+            using (var dialog = new DialogBatchFile(this, edit, command, action))
             {
                 if (dialog.ShowDialog() == DialogResult.OK)
                 {
@@ -361,6 +356,10 @@ namespace WinRLauncher
         }
 
         // -- Properties -- //
+
+        public static string EvPath { get; } = "PATH";
+        public static string EvWinRLauncherPath { get; } = "WINR_LNCH_PATH";
+        public static string EvRefWinRLauncherPath { get; } = "%" + EvWinRLauncherPath + "%";
 
         public bool Uninstalling { get; set; } = false;
 
@@ -381,6 +380,6 @@ namespace WinRLauncher
             }
         }
 
-        public List<File.LauncherFile> LauncherFiles { get; private set; }
+        public List<File.LauncherFile> LauncherFiles { get; private set; } = new List<File.LauncherFile>();
     }
 }

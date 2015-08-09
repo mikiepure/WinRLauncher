@@ -16,9 +16,23 @@ namespace WinRLauncher.File
             get { return System.IO.Path.GetFileNameWithoutExtension(this.FilePath); }
         }
 
-        public abstract string Action { get; set; }
-        public abstract string Arguments { get; set; }
-        public abstract string WorkingDirectory { get; set; }
+        public virtual string Action
+        {
+            get { return "-"; }
+            set { }
+        }
+
+        public virtual string Arguments
+        {
+            get { return "-"; }
+            set { }
+        }
+
+        public virtual string WorkingDirectory
+        {
+            get { return "-"; }
+            set { }
+        }
 
         public abstract System.Drawing.Color ForeColor { get; }
         public abstract System.Drawing.Color BackColor { get; }
