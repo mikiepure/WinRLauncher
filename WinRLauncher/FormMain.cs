@@ -73,7 +73,7 @@ namespace WinRLauncher
 
         private void userControlNewLinkFile()
         {
-            showShellLinkFileDialog(false);
+            showNewShellLinkFileDialog();
         }
 
         private void newBatchFileToolStripMenuItem_Click(object sender, EventArgs e)
@@ -88,7 +88,7 @@ namespace WinRLauncher
 
         private void userControlNewBatchFile()
         {
-            showBatchFileDialog(false);
+            showNewBatchFileDialog();
         }
 
         private void editSelectedFileToolStripMenuItem_Click(object sender, EventArgs e)
@@ -108,28 +108,29 @@ namespace WinRLauncher
 
             var launcherFile = LauncherFiles[listViewMain.SelectedItems[0].Index];
             if (launcherFile is File.ShellLinkFile)
-                showShellLinkFileDialog(true, launcherFile.Command, launcherFile.Action, launcherFile.Arguments, launcherFile.WorkingDirectory);
+                showEditShellLinkFileDialog(launcherFile.Command, launcherFile.Action, launcherFile.Arguments, launcherFile.WorkingDirectory);
             else if (launcherFile is File.BatchFile)
-                showBatchFileDialog(true, launcherFile.Command, launcherFile.Action);
+                showEditBatchFileDialog(launcherFile.Command, launcherFile.Action);
         }
 
         private void removeSelectedFileToolStripMenuItem_Click(object sender, EventArgs e)
         {
-            userControlRemoveSelectedFile();
+            userControlRemoveSelectedFile(true);
         }
 
         private void toolStripButtonRemoveSelectedFile_Click(object sender, EventArgs e)
         {
-            userControlRemoveSelectedFile();
+            userControlRemoveSelectedFile(true);
         }
 
-        private void userControlRemoveSelectedFile()
+        private void userControlRemoveSelectedFile(bool showConfirmDialog)
         {
             if (0 == listViewMain.SelectedItems.Count)
                 return;
             
-            if (MessageBox.Show("Are you sure you want to permanently delete selected file?", "INFO", MessageBoxButtons.YesNo, MessageBoxIcon.Question) != DialogResult.Yes)
-                return;
+            if (showConfirmDialog)
+                if (MessageBox.Show("Are you sure you want to permanently delete selected file?", "INFO", MessageBoxButtons.YesNo, MessageBoxIcon.Question) != DialogResult.Yes)
+                    return;
 
             foreach (ListViewItem selectedItem in listViewMain.SelectedItems)
                 System.IO.File.Delete(LauncherFiles[selectedItem.Index].FilePath);
@@ -263,7 +264,7 @@ namespace WinRLauncher
                     break;
 
                 case Keys.Delete:
-                    userControlRemoveSelectedFile();
+                    userControlRemoveSelectedFile(true);
                     break;
             }
         }
@@ -324,17 +325,18 @@ namespace WinRLauncher
                 wdir = System.IO.Path.GetDirectoryName(filepath);
             }
 
-            showShellLinkFileDialog(false, command, path, args, wdir);
+            showNewShellLinkFileDialog(command, path, args, wdir);
         }
 
         // -- Helper Functions -- //
 
-        private void showShellLinkFileDialog(bool edit, string command = "", string path = "", string arguments = "", string workingDirectory = "")
+        private void showNewShellLinkFileDialog(string command = "", string path = "", string arguments = "", string workingDirectory = "")
         {
-            using (var dialog = new DialogShellLinkFile(this, edit, command, path, arguments, workingDirectory))
+            using (var dialog = new DialogShellLinkFile(this, false, command, path, arguments, workingDirectory))
             {
                 if (dialog.ShowDialog() == DialogResult.OK)
                 {
+                    // Create new file.
                     var newFilePath = LauncherFilesDirectoryPath + System.IO.Path.DirectorySeparatorChar + dialog.Command + ".lnk";
                     File.ShellLinkFile.create(newFilePath, dialog.Path, dialog.Arguments, dialog.WorkingDirectory);
                     userControlReload();
@@ -342,12 +344,47 @@ namespace WinRLauncher
             }
         }
 
-        private void showBatchFileDialog(bool edit, string command = "", string action = "")
+        private void showEditShellLinkFileDialog(string command = "", string path = "", string arguments = "", string workingDirectory = "")
         {
-            using (var dialog = new DialogBatchFile(this, edit, command, action))
+            using (var dialog = new DialogShellLinkFile(this, true, command, path, arguments, workingDirectory))
             {
                 if (dialog.ShowDialog() == DialogResult.OK)
                 {
+                    // Remove old file.
+                    userControlRemoveSelectedFile(false);
+
+                    // Create new file.
+                    var newFilePath = LauncherFilesDirectoryPath + System.IO.Path.DirectorySeparatorChar + dialog.Command + ".lnk";
+                    File.ShellLinkFile.create(newFilePath, dialog.Path, dialog.Arguments, dialog.WorkingDirectory);
+                    userControlReload();
+                }
+            }
+        }
+
+        private void showNewBatchFileDialog(string command = "", string action = "")
+        {
+            using (var dialog = new DialogBatchFile(this, false, command, action))
+            {
+                if (dialog.ShowDialog() == DialogResult.OK)
+                {
+                    // Create new file.
+                    var filepath = LauncherFilesDirectoryPath + System.IO.Path.DirectorySeparatorChar + dialog.Command + ".bat";
+                    File.BatchFile.create(filepath, dialog.Action);
+                    userControlReload();
+                }
+            }
+        }
+
+        private void showEditBatchFileDialog(string command = "", string action = "")
+        {
+            using (var dialog = new DialogBatchFile(this, true, command, action))
+            {
+                if (dialog.ShowDialog() == DialogResult.OK)
+                {
+                    // Remove old file.
+                    userControlRemoveSelectedFile(false);
+
+                    // Create new file.
                     var filepath = LauncherFilesDirectoryPath + System.IO.Path.DirectorySeparatorChar + dialog.Command + ".bat";
                     File.BatchFile.create(filepath, dialog.Action);
                     userControlReload();
