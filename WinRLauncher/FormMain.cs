@@ -16,23 +16,33 @@ namespace WinRLauncher
             if (!System.IO.Directory.Exists(this.LauncherFilesDirectoryPath))
                 System.IO.Directory.CreateDirectory(this.LauncherFilesDirectoryPath);
 
+            bool isRebootDialog = false;
+
             // Create WinRLauncher environment variable
             string evWinRLauncherPath = EnvironmentVariable.getUserValue(EvWinRLauncherPath, RegistryValueOptions.None);
             if (evWinRLauncherPath != LauncherFilesDirectoryPath)
+            {
                 EnvironmentVariable.setUserValue(EvWinRLauncherPath, LauncherFilesDirectoryPath, RegistryValueKind.String);
+                isRebootDialog = true;
+            }
 
             // Set WinRLauncher environment variable to Path
             string[] evPathValues = EnvironmentVariable.getUserValues(EvPath, RegistryValueOptions.DoNotExpandEnvironmentNames);
             if (evPathValues == null)
             {
                 EnvironmentVariable.setUserValue(EvPath, EvRefWinRLauncherPath, RegistryValueKind.ExpandString);
+                isRebootDialog = true;
             }
             else if (Array.IndexOf<string>(evPathValues, EvRefWinRLauncherPath) < 0)
             {
                 var evPathList = new List<string>(evPathValues);
                 evPathList.Add(EvRefWinRLauncherPath);
                 EnvironmentVariable.setUserValue(EvPath, string.Join(";", evPathList.ToArray()), RegistryValueKind.ExpandString);
+                isRebootDialog = true;
             }
+
+            if (isRebootDialog)
+                MessageBox.Show("The environment variables were changed." + Environment.NewLine + "After rebooting Windows, it can be used.", "First Boot", MessageBoxButtons.OK, MessageBoxIcon.Information);
         }
 
         private void FormMain_Load(object sender, EventArgs e)

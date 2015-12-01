@@ -27,7 +27,7 @@ namespace WinRLauncher.File
                 string action = "";
                 using (var streamReader = new System.IO.StreamReader(this.FilePath))
                 {
-                    action = streamReader.ReadLine();
+                    action = streamReader.ReadToEnd();
                 }
                 return action;
             }
