@@ -11,10 +11,10 @@ using namespace System::Security::Permissions;
 [assembly:AssemblyConfigurationAttribute(L"")];
 [assembly:AssemblyCompanyAttribute(L"")];
 [assembly:AssemblyProductAttribute(L"ShellLinkBinder")];
-[assembly:AssemblyCopyrightAttribute(L"Copyright (c)  2023")];
+[assembly:AssemblyCopyrightAttribute(L"Copyright (c) 2015 Miki, Hiromitsu")];
 [assembly:AssemblyTrademarkAttribute(L"")];
 [assembly:AssemblyCultureAttribute(L"")];
 
-[assembly:AssemblyVersionAttribute(L"0.2.0")];
+[assembly:AssemblyVersionAttribute(L"0.2.1")];
 
 [assembly:ComVisible(false)];
