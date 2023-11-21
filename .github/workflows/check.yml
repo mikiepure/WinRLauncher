@@ -8,14 +8,15 @@ on:
       - master
 
 jobs:
-    build:
-        runs-on: windows-latest
-        steps:
-            - uses: actions/checkout@v4
-            - name: Add MSBuild to PATH
-              uses: microsoft/setup-msbuild@v1.3.1
-            - name: Build App
-              run: |
-                msbuild -version
-                msbuild ShellLinkBinder\ShellLinkBinder.vcxproj -p:configuration=Release -p:platform=x64
-                msbuild WinRLauncher\WinRLauncher.csproj -p:configuration=Release -p:platform=x64
+  build:
+    runs-on: windows-latest
+
+    steps:
+      - uses: actions/checkout@v4
+      - name: Add MSBuild to PATH
+        uses: microsoft/setup-msbuild@v1.3.1
+      - name: Build app
+        run: |
+          MSBuild -version
+          MSBuild .\ShellLinkBinder\ShellLinkBinder.vcxproj -p:configuration=Release -p:platform=x64
+          MSBuild .\WinRLauncher\WinRLauncher.csproj -p:configuration=Release -p:platform=x64

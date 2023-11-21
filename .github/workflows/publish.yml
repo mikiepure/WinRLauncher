@@ -1,0 +1,43 @@
+name: CD
+on:
+  push:
+    tags:
+      - "v*.*.*"
+
+jobs:
+  build:
+    runs-on: windows-latest
+
+    steps:
+      - uses: actions/checkout@v4
+      - name: Add MSBuild to PATH
+        uses: microsoft/setup-msbuild@v1.3.1
+      - name: Build app
+        run: |
+          MSBuild -version
+          MSBuild .\ShellLinkBinder\ShellLinkBinder.vcxproj -p:configuration=Release -p:platform=x64
+          MSBuild .\WinRLauncher\WinRLauncher.csproj -p:configuration=Release -p:platform=x64
+      - name: Create archive
+        run: |
+          $DirName = "WinRLauncher_${{ github.ref_name }}"
+          New-Item -Path $DirName -ItemType Directory
+          Compress-Archive -Path .\WinRLauncher\bin\x64\Release\* -DestinationPath .\$DirName.zip
+      - name: Create release
+        id: create_release
+        uses: actions/create-release@v1.0.0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: ${{ github.ref }}
+          release_name: Release ${{ github.ref }}
+          draft: false
+          prerelease: false
+      - name: Upload asset to release
+        uses: actions/upload-release-asset@v1.0.1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./WinRLauncher_${{ github.ref_name }}.zip
+          asset_name: WinRLauncher_${{ github.ref_name }}.zip
+          asset_content_type: application/zip
