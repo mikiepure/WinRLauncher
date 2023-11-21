@@ -1,432 +1,274 @@
 ﻿using Microsoft.Win32;
+using System.Diagnostics;
 using System;
 using System.Collections.Generic;
+using System.IO;
+using System.Threading.Tasks;
 using System.Windows.Forms;
-using WinRLauncher.Util;
 
 namespace WinRLauncher
 {
     public partial class FormMain : Form
     {
+        private readonly string _launcherDirPath;
+        private readonly List<LauncherFile> _launcherFiles = new List<LauncherFile>();
+
         public FormMain()
         {
             InitializeComponent();
 
-            // Create directory for launcher files
-            if (!System.IO.Directory.Exists(this.LauncherFilesDirectoryPath))
-                System.IO.Directory.CreateDirectory(this.LauncherFilesDirectoryPath);
-
-            bool isRebootDialog = false;
-
-            // Create WinRLauncher environment variable
-            string evWinRLauncherPath = EnvironmentVariable.getUserValue(EvWinRLauncherPath, RegistryValueOptions.None);
-            if (evWinRLauncherPath != LauncherFilesDirectoryPath)
+            // Create folder to store launcher files
+            _launcherDirPath = Path.Combine(
+                Environment.GetFolderPath(Environment.SpecialFolder.UserProfile, Environment.SpecialFolderOption.Create),
+                ".WinRLauncher");
+            if (!Directory.Exists(_launcherDirPath))
             {
-                EnvironmentVariable.setUserValue(EvWinRLauncherPath, LauncherFilesDirectoryPath, RegistryValueKind.String);
-                isRebootDialog = true;
+                Directory.CreateDirectory(_launcherDirPath);
             }
 
-            // Set WinRLauncher environment variable to Path
-            string[] evPathValues = EnvironmentVariable.getUserValues(EvPath, RegistryValueOptions.DoNotExpandEnvironmentNames);
-            if (evPathValues == null)
+            // Add launcher folder to PATH of environment variable
+            bool rebootRequired = false;
+            var envPathArray = EnvHelper.GetUserValues("PATH", RegistryValueOptions.DoNotExpandEnvironmentNames);
+            if (envPathArray == null)
             {
-                EnvironmentVariable.setUserValue(EvPath, EvRefWinRLauncherPath, RegistryValueKind.ExpandString);
-                isRebootDialog = true;
+                EnvHelper.SetUserValue("PATH", _launcherDirPath, RegistryValueKind.ExpandString);
+                rebootRequired = true;
             }
-            else if (Array.IndexOf<string>(evPathValues, EvRefWinRLauncherPath) < 0)
+            else if (Array.IndexOf(envPathArray, _launcherDirPath) < 0)
             {
-                var evPathList = new List<string>(evPathValues);
-                evPathList.Add(EvRefWinRLauncherPath);
-                EnvironmentVariable.setUserValue(EvPath, string.Join(";", evPathList.ToArray()), RegistryValueKind.ExpandString);
-                isRebootDialog = true;
+                var envPathList = new List<string>(envPathArray)
+                {
+                    _launcherDirPath
+                };
+                EnvHelper.SetUserValues("PATH", envPathList, RegistryValueKind.ExpandString);
+                rebootRequired = true;
             }
 
-            if (isRebootDialog)
-                MessageBox.Show("The environment variables were changed." + Environment.NewLine + "After rebooting Windows, it can be used.", "First Boot", MessageBoxButtons.OK, MessageBoxIcon.Information);
+            if (rebootRequired)
+                MessageBox.Show(
+                    $"The value of environment variable PATH was changed.{Environment.NewLine}Please reboot Windows to apply it.",
+                    "Note", MessageBoxButtons.OK, MessageBoxIcon.Information);
         }
+
+        //---------------------------------------------------------------------
+        // Event Handlers
+        //---------------------------------------------------------------------
 
         private void FormMain_Load(object sender, EventArgs e)
         {
-            userControlReload();
+            ReloadFromFileSystem();
         }
 
-        private void FormMain_FormClosing(object sender, FormClosingEventArgs e)
+        private void ToolStripButtonCreateNewFile_Click(object sender, EventArgs e)
         {
-            if (!Uninstalling)
-                Properties.Settings.Default.Save();
+            CreateNewFile("");
         }
 
-        private void exitToolStripMenuItem_Click(object sender, EventArgs e)
+        private void ToolStripButtonEditSelectedFile_Click(object sender, EventArgs e)
         {
-            userControlExit();
+            EditSelectedFile(listViewMain);
         }
 
-        private void toolStripButtonExit_Click(object sender, EventArgs e)
+        private void ToolStripButtonRemoveSelectedFile_Click(object sender, EventArgs e)
         {
-            userControlExit();
+            RemoveSelectedFile(listViewMain);
         }
 
-        private void userControlExit()
+        private void ToolStripButtonReload_Click(object sender, EventArgs e)
         {
-            Application.Exit();
+            ReloadFromFileSystem();
         }
 
-        private void newLinkFileToolStripMenuItem_Click(object sender, EventArgs e)
+        private void ToolStripButtonOpenLauncherFolder_Click(object sender, EventArgs e)
         {
-            userControlNewLinkFile();
+            OpenLauncherFolder();
         }
 
-        private void toolStripButtonNewLinkFile_Click(object sender, EventArgs e)
+        private void ToolStripButtonAbout_Click(object sender, EventArgs e)
         {
-            userControlNewLinkFile();
+            ShowAboutDialog();
         }
 
-        private void userControlNewLinkFile()
+        private void ListViewMain_KeyDown(object sender, KeyEventArgs e)
         {
-            showNewShellLinkFileDialog();
-        }
-
-        private void newBatchFileToolStripMenuItem_Click(object sender, EventArgs e)
-        {
-            userControlNewBatchFile();
-        }
-
-        private void toolStripButtonNewBatchFile_Click(object sender, EventArgs e)
-        {
-            userControlNewBatchFile();
-        }
-
-        private void userControlNewBatchFile()
-        {
-            showNewBatchFileDialog();
-        }
-
-        private void editSelectedFileToolStripMenuItem_Click(object sender, EventArgs e)
-        {
-            userControlEditSelectedFile();
-        }
-
-        private void toolStripButtonEditSelectedFile_Click(object sender, EventArgs e)
-        {
-            userControlEditSelectedFile();
-        }
-
-        private void userControlEditSelectedFile()
-        {
-            if (1 != listViewMain.SelectedItems.Count)
-                return;
-
-            var launcherFile = LauncherFiles[listViewMain.SelectedItems[0].Index];
-            if (launcherFile is File.ShellLinkFile)
-                showEditShellLinkFileDialog(launcherFile.Command, launcherFile.Action, launcherFile.Arguments, launcherFile.WorkingDirectory);
-            else if (launcherFile is File.BatchFile)
-                showEditBatchFileDialog(launcherFile.Command, launcherFile.Action);
-        }
-
-        private void removeSelectedFileToolStripMenuItem_Click(object sender, EventArgs e)
-        {
-            userControlRemoveSelectedFile(true);
-        }
-
-        private void toolStripButtonRemoveSelectedFile_Click(object sender, EventArgs e)
-        {
-            userControlRemoveSelectedFile(true);
-        }
-
-        private void userControlRemoveSelectedFile(bool showConfirmDialog)
-        {
-            if (0 == listViewMain.SelectedItems.Count)
-                return;
-            
-            if (showConfirmDialog)
-                if (MessageBox.Show("Are you sure you want to permanently delete selected file?", "INFO", MessageBoxButtons.YesNo, MessageBoxIcon.Question) != DialogResult.Yes)
-                    return;
-
-            foreach (ListViewItem selectedItem in listViewMain.SelectedItems)
-                System.IO.File.Delete(LauncherFiles[selectedItem.Index].FilePath);
-
-            userControlReload();
-        }
-
-        private void reloadToolStripMenuItem_Click(object sender, EventArgs e)
-        {
-            userControlReload();
-        }
-
-        private void toolStripButtonReload_Click(object sender, EventArgs e)
-        {
-            userControlReload();
-        }
-
-        private void userControlReload()
-        {
-            this.LauncherFiles.Clear();
-            foreach (var lnkFilePath in System.IO.Directory.GetFiles(this.LauncherFilesDirectoryPath, "*.lnk"))
-                this.LauncherFiles.Add(File.ShellLinkFile.load(lnkFilePath));
-            foreach (var batFilePath in System.IO.Directory.GetFiles(this.LauncherFilesDirectoryPath, "*.bat"))
-                this.LauncherFiles.Add(File.BatchFile.load(batFilePath));
-            foreach (var exeFilePath in System.IO.Directory.GetFiles(this.LauncherFilesDirectoryPath, "*.exe"))
-                this.LauncherFiles.Add(new File.ExeFile(exeFilePath));
-            this.LauncherFiles.Sort();
-
-            var items = new List<ListViewItem>();
-            foreach (var launcherFile in this.LauncherFiles)
-            {
-                var item = new ListViewItem(launcherFile.Command);
-                item.SubItems.Add(launcherFile.Action);
-                item.SubItems.Add(launcherFile.Arguments);
-                item.SubItems.Add(launcherFile.WorkingDirectory);
-                item.ForeColor = launcherFile.ForeColor;
-                item.BackColor = launcherFile.BackColor;
-                items.Add(item);
-            }
-            this.listViewMain.Items.Clear();
-            this.listViewMain.Items.AddRange(items.ToArray());
-        }
-
-        private void openLauncherFilesPathToolStripMenuItem_Click(object sender, EventArgs e)
-        {
-            userControlOpenLauncherFilesPath();
-        }
-
-        private void toolStripButtonOpenLauncherFilesPath_Click(object sender, EventArgs e)
-        {
-            userControlOpenLauncherFilesPath();
-        }
-
-        private void userControlOpenLauncherFilesPath()
-        {
-            if (System.IO.Directory.Exists(LauncherFilesDirectoryPath))
-                System.Diagnostics.Process.Start(LauncherFilesDirectoryPath);
-            else
-                MessageBox.Show("Failed to open directory ' " + LauncherFilesDirectoryPath + " ' : Directory is not exists.", "ERROR", MessageBoxButtons.OK, MessageBoxIcon.Error);
-        }
-
-        private void uninstallToolStripMenuItem_Click(object sender, EventArgs e)
-        {
-            userControlUninstall();
-        }
-
-        private void userControlUninstall()
-        {
-            if (MessageBox.Show("Are you sure you want to uninstall the application?", "Confirm to unistall", MessageBoxButtons.YesNo, MessageBoxIcon.Question) != DialogResult.Yes)
-                return;
-            if (MessageBox.Show("Are you sure?", "Confirm to unistall", MessageBoxButtons.YesNo, MessageBoxIcon.Question) != DialogResult.Yes)
-                return;
-
-            // Remove ' %WINR_LAUNCHER_PATH% ' from environment variable ' PATH '
-            var evPaths = EnvironmentVariable.getUserValues(FormMain.EvPath, RegistryValueOptions.DoNotExpandEnvironmentNames);
-            if (evPaths != null)
-            {
-                var evPathList = new List<string>(evPaths);
-                if (evPathList.Remove(FormMain.EvRefWinRLauncherPath))
-                {
-                    if (0 < evPathList.Count)
-                    {
-                        EnvironmentVariable.setUserValues(FormMain.EvPath, evPathList.ToArray(), RegistryValueKind.ExpandString);
-                    }
-                    else
-                    {
-                        EnvironmentVariable.deleteUserKey(FormMain.EvPath);
-                    }
-                }
-            }
-
-            // Remove environment variable ' PATH_LNKS '
-            string evWinRLauncherPath = EnvironmentVariable.getUserValue(FormMain.EvWinRLauncherPath, RegistryValueOptions.None);
-            if (evWinRLauncherPath != null)
-            {
-                EnvironmentVariable.deleteUserKey(FormMain.EvWinRLauncherPath);
-            }
-
-            // Remove configuration directory
-            if (System.IO.Directory.Exists(ConfigurationDirectoryPath))
-            {
-                System.IO.Directory.Delete(ConfigurationDirectoryPath, true);
-            }
-
-            Uninstalling = true;
-            Application.Exit();
-        }
-
-        private void aboutToolStripMenuItem_Click(object sender, EventArgs e)
-        {
-            userControlAbout();
-        }
-
-        private void toolStripButtonAbout_Click(object sender, EventArgs e)
-        {
-            userControlAbout();
-        }
-
-        private void userControlAbout()
-        {
-            var version = System.Diagnostics.FileVersionInfo.GetVersionInfo(System.Reflection.Assembly.GetExecutingAssembly().Location);
-            MessageBox.Show("Win+R Launcher ver " + version.ProductVersion + Environment.NewLine + version.LegalCopyright, "About", MessageBoxButtons.OK, MessageBoxIcon.Information);
-        }
-
-        private void listViewMain_KeyDown(object sender, KeyEventArgs e)
-        {
+            var listViewMain = (ListView)sender;
             switch (e.KeyData)
             {
                 case Keys.Enter:
-                    userControlEditSelectedFile();
+                    EditSelectedFile(listViewMain);
                     break;
-
                 case Keys.Delete:
-                    userControlRemoveSelectedFile(true);
+                    RemoveSelectedFile(listViewMain);
+                    break;
+                case Keys.F5:
+                    ReloadFromFileSystem();
                     break;
             }
         }
 
-        private void listViewMain_DoubleClick(object sender, EventArgs e)
+        private void ListViewMain_DoubleClick(object sender, EventArgs e)
         {
-            userControlEditSelectedFile();
+            var listViewMain = (ListView)sender;
+            EditSelectedFile(listViewMain);
         }
 
-        private void listViewMain_DragEnter(object sender, DragEventArgs e)
+        private void ListViewMain_DragEnter(object sender, DragEventArgs e)
         {
             if (e.Data.GetDataPresent(DataFormats.FileDrop))
-                e.Effect = DragDropEffects.Copy;
+                e.Effect = DragDropEffects.Link;
             else
                 e.Effect = DragDropEffects.None;
         }
 
-        private void listViewMain_DragDrop(object sender, DragEventArgs e)
+        private async void ListViewMain_DragDrop(object sender, DragEventArgs e)
         {
-            var filepaths = (string[])(e.Data.GetData(DataFormats.FileDrop, false));
-            if (filepaths.Length != 1)
+            var pathlist = (string[])e.Data.GetData(DataFormats.FileDrop, false);
+            if (pathlist.Length != 1)
             {
-                MessageBox.Show("Can not accept multiple files.", "WARNING", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                MessageBox.Show("Multiple files are not accepted.", "Warning",
+                    MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 return;
             }
 
-            var filepath = filepaths[0];
-            backgroundWorkerDragDrop.RunWorkerAsync(filepath);  // For releasing drag context.
+            // Release thread context once to exit context of drag & drop
+            await Task.Yield();
+
+            CreateNewFile(pathlist[0]);
         }
 
-        private void backgroundWorkerDragDrop_DoWork(object sender, System.ComponentModel.DoWorkEventArgs e)
-        {
-            e.Result = e.Argument;
-        }
+        //---------------------------------------------------------------------
+        // Procedures
+        //---------------------------------------------------------------------
 
-        private void backgroundWorkerDragDrop_RunWorkerCompleted(object sender, System.ComponentModel.RunWorkerCompletedEventArgs e)
+        private void CreateNewFile(string sourceFilePath)
         {
-            this.Activate();
-            var filepath = (string)(e.Result);
-
-            var command = "";
-            var path = "";
-            var args = "";
-            var wdir = "";
-            if (System.IO.Path.GetExtension(filepath) == ".lnk")
+            if (sourceFilePath == "")
             {
-                var shellLinkFile = File.ShellLinkFile.load(filepath);
-                command = shellLinkFile.Command;
-                path = shellLinkFile.Action;
-                args = shellLinkFile.Arguments;
-                wdir = shellLinkFile.WorkingDirectory;
-
+                ShowShellLinkPropDialog("", "", "", "");
+            }
+            else if (Path.GetExtension(sourceFilePath) == ".lnk")
+            {
+                ShellLinkBinder.ShellLink.LoadFromFile(sourceFilePath,
+                    out string path, out string args, out string wdir);
+                ShowShellLinkPropDialog(sourceFilePath, path, args, wdir);
             }
             else
             {
-                command = System.IO.Path.GetFileNameWithoutExtension(filepath);
-                path = filepath;
-                wdir = System.IO.Path.GetDirectoryName(filepath);
+                ShowShellLinkPropDialog(
+                    Path.Combine(_launcherDirPath, Path.GetFileName(sourceFilePath)),
+                    sourceFilePath, "", Path.GetDirectoryName(sourceFilePath));
             }
-
-            showNewShellLinkFileDialog(command, path, args, wdir);
         }
 
-        // -- Helper Functions -- //
-
-        private void showNewShellLinkFileDialog(string command = "", string path = "", string arguments = "", string workingDirectory = "")
+        private void EditSelectedFile(ListView view)
         {
-            using (var dialog = new DialogShellLinkFile(this, false, command, path, arguments, workingDirectory))
+            var file = GetSelectedFile(view);
+            if ((file != null) && (file.Ext == ".lnk"))
+                ShowShellLinkPropDialog(file.FilePath, file.Path, file.Args, file.WDir, true);
+        }
+
+        private void ShowShellLinkPropDialog(string filepath, string path, string args, string wdir, bool edit = false)
+        {
+            var filename = Path.GetFileNameWithoutExtension(filepath);
+            using (var dialog = new ShellLinkPropDialog(filename, path, args, wdir))
             {
                 if (dialog.ShowDialog() == DialogResult.OK)
                 {
-                    // Create new file.
-                    var newFilePath = LauncherFilesDirectoryPath + System.IO.Path.DirectorySeparatorChar + dialog.Command + ".lnk";
-                    File.ShellLinkFile.create(newFilePath, dialog.Path, dialog.Arguments, dialog.WorkingDirectory);
-                    userControlReload();
+                    // Create new file
+                    var newFilePath = Path.Combine(_launcherDirPath, $"{dialog.FileName}.lnk");
+                    if (!ShellLinkBinder.ShellLink.CreateNewFile(
+                        newFilePath, dialog.Path, dialog.Args, dialog.WDir))
+                    {
+                        MessageBox.Show("Failed to create file by error.", "Error",
+                            MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    }
+
+                    // Remove old file
+                    if (edit)
+                        File.Delete(filepath);
+
+                    ReloadFromFileSystem();
                 }
             }
         }
 
-        private void showEditShellLinkFileDialog(string command = "", string path = "", string arguments = "", string workingDirectory = "")
+        private void RemoveSelectedFile(ListView view)
         {
-            using (var dialog = new DialogShellLinkFile(this, true, command, path, arguments, workingDirectory))
+            var file = GetSelectedFile(view);
+            if (file != null)
             {
-                if (dialog.ShowDialog() == DialogResult.OK)
+                File.Delete(file.FilePath);
+                ReloadFromFileSystem();
+            }
+        }
+
+        private void ReloadFromFileSystem()
+        {
+            _launcherFiles.Clear();
+            foreach (var pattern in ShellLinkFile.SupportedPatterns)
+                foreach (var filepath in Directory.GetFiles(_launcherDirPath, pattern))
+                    _launcherFiles.Add(ShellLinkFile.Load(filepath));
+            foreach (var pattern in BatchFile.SupportedPatterns)
+                foreach (var filepath in Directory.GetFiles(_launcherDirPath, pattern))
+                    _launcherFiles.Add(new BatchFile(filepath));
+            foreach (var pattern in ExeFile.SupportedPatterns)
+                foreach (var filepath in Directory.GetFiles(_launcherDirPath, pattern))
+                    _launcherFiles.Add(new ExeFile(filepath));
+            _launcherFiles.Sort();
+
+            var items = new List<ListViewItem>();
+            foreach (var launcherFile in _launcherFiles)
+            {
+                var item = new ListViewItem(launcherFile.Name);
+                item.SubItems.Add(launcherFile.Ext);
+                item.SubItems.Add(launcherFile.Path);
+                item.SubItems.Add(launcherFile.Args);
+                item.SubItems.Add(launcherFile.WDir);
+                item.ForeColor = launcherFile.ForeColor;
+                var sameNamePaths = launcherFile.GetSameNamePaths();
+                if (sameNamePaths.Length > 1)
                 {
-                    // Remove old file.
-                    userControlRemoveSelectedFile(false);
+                    item.BackColor = System.Drawing.Color.Yellow;
 
-                    // Create new file.
-                    var newFilePath = LauncherFilesDirectoryPath + System.IO.Path.DirectorySeparatorChar + dialog.Command + ".lnk";
-                    File.ShellLinkFile.create(newFilePath, dialog.Path, dialog.Arguments, dialog.WorkingDirectory);
-                    userControlReload();
+                    var text = $"The following files have the same name on the PATH:\n";
+                    foreach (var path in sameNamePaths)
+                        text += $"- {path}\n";
+                    item.ToolTipText = text;
                 }
+                items.Add(item);
             }
+
+            listViewMain.Items.Clear();
+            listViewMain.Items.AddRange(items.ToArray());
         }
 
-        private void showNewBatchFileDialog(string command = "", string action = "")
+        private void OpenLauncherFolder()
         {
-            using (var dialog = new DialogBatchFile(this, false, command, action))
-            {
-                if (dialog.ShowDialog() == DialogResult.OK)
-                {
-                    // Create new file.
-                    var filepath = LauncherFilesDirectoryPath + System.IO.Path.DirectorySeparatorChar + dialog.Command + ".bat";
-                    File.BatchFile.create(filepath, dialog.Action);
-                    userControlReload();
-                }
-            }
+            if (Directory.Exists(_launcherDirPath))
+                Process.Start(_launcherDirPath);
+            else
+                MessageBox.Show(
+                    $"Failed to open directory '{_launcherDirPath}' by error: not exists.",
+                    "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
         }
 
-        private void showEditBatchFileDialog(string command = "", string action = "")
+        private void ShowAboutDialog()
         {
-            using (var dialog = new DialogBatchFile(this, true, command, action))
-            {
-                if (dialog.ShowDialog() == DialogResult.OK)
-                {
-                    // Remove old file.
-                    userControlRemoveSelectedFile(false);
-
-                    // Create new file.
-                    var filepath = LauncherFilesDirectoryPath + System.IO.Path.DirectorySeparatorChar + dialog.Command + ".bat";
-                    File.BatchFile.create(filepath, dialog.Action);
-                    userControlReload();
-                }
-            }
+            var version = FileVersionInfo.GetVersionInfo(System.Reflection.Assembly.GetExecutingAssembly().Location);
+            MessageBox.Show($"WinR Launcher ver {version.ProductVersion}{Environment.NewLine}{version.LegalCopyright}",
+                "About", MessageBoxButtons.OK, MessageBoxIcon.Information);
         }
 
-        // -- Properties -- //
+        //---------------------------------------------------------------------
+        // Properties
+        //---------------------------------------------------------------------
 
-        public static string EvPath { get; } = "PATH";
-        public static string EvWinRLauncherPath { get; } = "WINR_LNCH_PATH";
-        public static string EvRefWinRLauncherPath { get; } = "%" + EvWinRLauncherPath + "%";
-
-        public bool Uninstalling { get; set; } = false;
-
-        public string ConfigurationDirectoryPath
+        private LauncherFile GetSelectedFile(ListView view)
         {
-            get
-            {
-                var configFilePath = System.Configuration.ConfigurationManager.OpenExeConfiguration(System.Configuration.ConfigurationUserLevel.PerUserRoamingAndLocal).FilePath;
-                return System.IO.Path.GetDirectoryName(configFilePath);
-            }
-        }
+            if (view.SelectedItems.Count != 1)
+                return null;
 
-        private string LauncherFilesDirectoryPath
-        {
-            get
-            {
-                return ConfigurationDirectoryPath + System.IO.Path.DirectorySeparatorChar + "LauncherFiles";
-            }
+            return _launcherFiles[view.SelectedItems[0].Index];
         }
-
-        public List<File.LauncherFile> LauncherFiles { get; private set; } = new List<File.LauncherFile>();
     }
 }

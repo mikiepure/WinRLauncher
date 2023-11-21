@@ -3,10 +3,10 @@ using System.Windows.Forms;
 
 namespace WinRLauncher
 {
-    static class Program
+    internal static class Program
     {
         /// <summary>
-        /// The main entry point for the application.
+        /// アプリケーションのメイン エントリ ポイントです。
         /// </summary>
         [STAThread]
         static void Main()

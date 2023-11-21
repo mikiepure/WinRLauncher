@@ -19,7 +19,7 @@ namespace WinRLauncher.Properties {
     // または Visual Studio のようなツールを使用して自動生成されました。
     // メンバーを追加または削除するには、.ResX ファイルを編集して、/str オプションと共に
     // ResGen を実行し直すか、または VS プロジェクトをビルドし直します。
-    [global::System.CodeDom.Compiler.GeneratedCodeAttribute("System.Resources.Tools.StronglyTypedResourceBuilder", "4.0.0.0")]
+    [global::System.CodeDom.Compiler.GeneratedCodeAttribute("System.Resources.Tools.StronglyTypedResourceBuilder", "17.0.0.0")]
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
     [global::System.Runtime.CompilerServices.CompilerGeneratedAttribute()]
     internal class Resources {
@@ -47,7 +47,7 @@ namespace WinRLauncher.Properties {
         }
         
         /// <summary>
-        ///   厳密に型指定されたこのリソース クラスを使用して、すべての検索リソースに対し、
+        ///   すべてについて、現在のスレッドの CurrentUICulture プロパティをオーバーライドします
         ///   現在のスレッドの CurrentUICulture プロパティをオーバーライドします。
         /// </summary>
         [global::System.ComponentModel.EditorBrowsableAttribute(global::System.ComponentModel.EditorBrowsableState.Advanced)]
@@ -57,36 +57,6 @@ namespace WinRLauncher.Properties {
             }
             set {
                 resourceCulture = value;
-            }
-        }
-        
-        /// <summary>
-        ///   型 System.Drawing.Bitmap のローカライズされたリソースを検索します。
-        /// </summary>
-        internal static System.Drawing.Bitmap application_delete {
-            get {
-                object obj = ResourceManager.GetObject("application_delete", resourceCulture);
-                return ((System.Drawing.Bitmap)(obj));
-            }
-        }
-        
-        /// <summary>
-        ///   型 System.Drawing.Bitmap のローカライズされたリソースを検索します。
-        /// </summary>
-        internal static System.Drawing.Bitmap arrow_refresh {
-            get {
-                object obj = ResourceManager.GetObject("arrow_refresh", resourceCulture);
-                return ((System.Drawing.Bitmap)(obj));
-            }
-        }
-        
-        /// <summary>
-        ///   型 System.Drawing.Bitmap のローカライズされたリソースを検索します。
-        /// </summary>
-        internal static System.Drawing.Bitmap folder_go {
-            get {
-                object obj = ResourceManager.GetObject("folder_go", resourceCulture);
-                return ((System.Drawing.Bitmap)(obj));
             }
         }
         
@@ -103,9 +73,9 @@ namespace WinRLauncher.Properties {
         /// <summary>
         ///   型 System.Drawing.Bitmap のローカライズされたリソースを検索します。
         /// </summary>
-        internal static System.Drawing.Bitmap information {
+        internal static System.Drawing.Bitmap tooltip_about {
             get {
-                object obj = ResourceManager.GetObject("information", resourceCulture);
+                object obj = ResourceManager.GetObject("tooltip_about", resourceCulture);
                 return ((System.Drawing.Bitmap)(obj));
             }
         }
@@ -113,9 +83,9 @@ namespace WinRLauncher.Properties {
         /// <summary>
         ///   型 System.Drawing.Bitmap のローカライズされたリソースを検索します。
         /// </summary>
-        internal static System.Drawing.Bitmap page_white_delete {
+        internal static System.Drawing.Bitmap tooltip_diropen {
             get {
-                object obj = ResourceManager.GetObject("page_white_delete", resourceCulture);
+                object obj = ResourceManager.GetObject("tooltip_diropen", resourceCulture);
                 return ((System.Drawing.Bitmap)(obj));
             }
         }
@@ -123,9 +93,9 @@ namespace WinRLauncher.Properties {
         /// <summary>
         ///   型 System.Drawing.Bitmap のローカライズされたリソースを検索します。
         /// </summary>
-        internal static System.Drawing.Bitmap page_white_edit {
+        internal static System.Drawing.Bitmap tooltip_edit {
             get {
-                object obj = ResourceManager.GetObject("page_white_edit", resourceCulture);
+                object obj = ResourceManager.GetObject("tooltip_edit", resourceCulture);
                 return ((System.Drawing.Bitmap)(obj));
             }
         }
@@ -133,9 +103,9 @@ namespace WinRLauncher.Properties {
         /// <summary>
         ///   型 System.Drawing.Bitmap のローカライズされたリソースを検索します。
         /// </summary>
-        internal static System.Drawing.Bitmap page_white_gear {
+        internal static System.Drawing.Bitmap tooltip_new {
             get {
-                object obj = ResourceManager.GetObject("page_white_gear", resourceCulture);
+                object obj = ResourceManager.GetObject("tooltip_new", resourceCulture);
                 return ((System.Drawing.Bitmap)(obj));
             }
         }
@@ -143,9 +113,19 @@ namespace WinRLauncher.Properties {
         /// <summary>
         ///   型 System.Drawing.Bitmap のローカライズされたリソースを検索します。
         /// </summary>
-        internal static System.Drawing.Bitmap page_white_link {
+        internal static System.Drawing.Bitmap tooltip_refresh {
             get {
-                object obj = ResourceManager.GetObject("page_white_link", resourceCulture);
+                object obj = ResourceManager.GetObject("tooltip_refresh", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   型 System.Drawing.Bitmap のローカライズされたリソースを検索します。
+        /// </summary>
+        internal static System.Drawing.Bitmap tooltip_remove {
+            get {
+                object obj = ResourceManager.GetObject("tooltip_remove", resourceCulture);
                 return ((System.Drawing.Bitmap)(obj));
             }
         }
