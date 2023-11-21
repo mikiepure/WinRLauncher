@@ -17,5 +17,5 @@ jobs:
             - name: Build App
               run: |
                 msbuild -version
-                msbuild ShellLinkBinder\ShellLinkBinder.vcxproj -p:configuration=Release;platform=x64
-                msbuild WinRLauncher\WinRLauncher.csproj -p:configuration=Release;platform=x64
+                msbuild ShellLinkBinder\ShellLinkBinder.vcxproj -p:configuration=Release -p:platform=x64
+                msbuild WinRLauncher\WinRLauncher.csproj -p:configuration=Release -p:platform=x64
